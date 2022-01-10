@@ -3,3 +3,52 @@
   padding: 0;
   line-height: 1.25;
 }
+
+body {
+  background-color: #eee;
+}
+
+.container {
+  height: 100vh;
+  overflow: auto;
+  padding: 0 10px;
+  position: relative;
+}
+
+.item {
+  padding: 10px 20px 0;
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  height: 210px;
+  margin-bottom: 10px;
+  background: #fff;
+  position: absolute;
+}
+
+.info {
+  height: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.pic {
+  height: 100px;
+}
+
+.comment {
+  height: 80px;
+  width: 100%;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.sentry {
+  width: 1px;
+  height: 1px;
+}
