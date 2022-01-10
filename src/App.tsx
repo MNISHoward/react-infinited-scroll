@@ -1,5 +1,6 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import './App.css';
+import FixInfinitedScroll from './fix-infinited-scroll';
 import Item from './Item';
 import { generateItems } from './mock';
 
@@ -86,14 +87,23 @@ function App() {
     })
   }, [list]);
   return (
-    <div onScroll={scroll} ref={containerRef} className="container">
-      <div className="sentry" style={{ transform: `translateY(${scrollHeight}px)` }} ></div>
-      {
-        visibleList.map((item, idx) => 
-          <Item style={{transform: `translateY(${item.scrollY}px)`}} ref={itemRef} item={item} key={idx} />
-        )
-      }
-    </div>
+    <>
+      <div onScroll={scroll} ref={containerRef} className="container">
+        <div className="sentry" style={{ transform: `translateY(${scrollHeight}px)` }} ></div>
+        {
+          visibleList.map((item, idx) => 
+            <Item style={{transform: `translateY(${item.scrollY}px)`}} ref={itemRef} item={item} key={idx} />
+          )
+        }
+      </div>
+      <FixInfinitedScroll list={list} >
+        {
+          (item, ref) => 
+            <Item ref={ref} item={item} style={{}} />
+          
+        }
+      </FixInfinitedScroll>
+    </>
   );
 }
 

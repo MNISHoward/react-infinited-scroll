@@ -2,7 +2,7 @@ import faker, { fake } from 'faker';
 
 const GENERATE_COUNT = 20;
 
-type Item_Type = {
+export type Item_Type = {
   name: string;
   comment: string;
   pic: string;
