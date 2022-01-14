@@ -9,6 +9,7 @@ export type Item_Type = {
   pic2: string;
   thumbUp: number;
   scrollY?: number;
+  index?: number;
 };
 
 export function generateItems(): Item_Type[] {

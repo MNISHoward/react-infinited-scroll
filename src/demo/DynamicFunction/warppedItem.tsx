@@ -1,24 +1,22 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import styles from './index.module.scss'
 import ResizeObserver from 'resize-observer-polyfill';
 
 type TProps = {
   children: React.ReactElement,
   style: any,
-  idx: number,
-  sizeChange: (idx: number, height: number) => void;
+  sizeChange: () => void;
+  index: number
 }
 
 const WrappedItem = React.memo<TProps>(({
   children,
   style,
-  idx,
-  sizeChange
+  sizeChange,
+  index
 }) => {
-  const idxRef = useRef<number>(idx);
   const resizeObserver = useRef<ResizeObserver>(new ResizeObserver((entries, observer) => {
-    const contentRect = entries[0].contentRect;
-    sizeChange(idxRef.current, contentRect.height);
+    sizeChange();
   }));
   const resizedContainerRef = useCallback((container: HTMLDivElement) => {
       if (container !== null) {
@@ -36,11 +34,8 @@ const WrappedItem = React.memo<TProps>(({
         ref.disconnect();
     }
   }, []);
-  useLayoutEffect(() => {
-    idxRef.current = idx;
-  }, [idx]);
 
-  return <div style={style} ref={resizedContainerRef} className={styles.wrapItem} >{children}</div>;
+  return <div style={style} data-index={index} ref={resizedContainerRef} className={styles.wrapItem} >{children}</div>;
 });
 
 export default WrappedItem;

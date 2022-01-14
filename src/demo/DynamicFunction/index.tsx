@@ -1,5 +1,6 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { generateDynamicItems } from '../../mock';
+import { outerHeight } from '../../utils';
 import DynamicItem from '../DynamicItem';
 import styles from './index.module.scss'
 import WrappedItem from './warppedItem';
@@ -21,24 +22,39 @@ function DynamicFunction() {
   const lastScrollTop = useRef(0);
   const anchorItem = useRef({ index: 0, offset: 0 })
 
-  const updateScrollY = useCallback((idx: number, height: number) => {
-    const diff = height - (itemHeights[idx] || ELEMENT_HEIGHT);
-    for (let i = idx + 1; i < itemScrollYs.length; i++) {
-      itemScrollYs[i] += diff;
+  const updateScrollY = useCallback(() => {
+    const items = document.getElementsByClassName(styles.wrapItem);
+    const lastIdx = (items[items.length - 1] as any).dataset.index;
+    const anchorDom = Array.from(items).find((item) => Number((item as any).dataset.index) === anchorItem.current.index);
+    itemHeights[anchorItem.current.index] = outerHeight(anchorDom);
+    itemScrollYs[anchorItem.current.index] = containerRef.current!.scrollTop - anchorItem.current.offset;
+    for (let i = (anchorDom as any).dataset.index + 1; i < lastIdx; i++) {
+      const item = items[i];
+      const index = (item as any).dataset.index;
+      itemHeights[index] = outerHeight(item);
+      const scrollY = itemScrollYs[index - 1] + itemHeights[index - 1];
+      itemScrollYs[index] = scrollY;
     }
+
+    for (let i = (anchorDom as any).dataset.index - 1; i >= 0; i--) {
+      const item = items[i];
+      const index = (item as any).dataset.index
+      itemHeights[index] = outerHeight(item);
+      const scrollY = itemScrollYs[index + 1] - itemHeights[index];
+      itemScrollYs[index] = scrollY;
+    }
+    setItemHeights([...itemHeights]);
     setItemScrollYs([...itemScrollYs]);
   }, [itemHeights, itemScrollYs]);
 
 
-  const sizeChange = useCallback((idx: number, height: number) => {
-    updateScrollY(idx, height);
-    itemHeights[idx] = height;
+  const sizeChange = useCallback(() => {
+    updateScrollY();
     setItemHeights([...itemHeights]);
   }, [itemHeights, updateScrollY]);
 
   useLayoutEffect(() => {
     let scrollH = itemHeights.reduce((sum, h) => sum += h, 0);
-    console.log(scrollH + (list.length - itemHeights.length) * ELEMENT_HEIGHT)
     setScrollHeight(scrollH + (list.length - itemHeights.length) * ELEMENT_HEIGHT);
   }, [itemHeights, list]);
 
@@ -97,18 +113,17 @@ function DynamicFunction() {
     const scrolls: number[] = [];
     const heights: number[] = [];
     list.forEach((item, idx) => {
+      item.index = scrolls.length;
       scrolls[idx] = idx * ELEMENT_HEIGHT;
-      heights[idx] = ELEMENT_HEIGHT;
     })
     setItemScrollYs(scrolls);
-    setItemHeights(heights);
   }, [list]);
   return (
     <div onScroll={scroll} ref={containerRef} className={styles.container}>
       <div className={styles.sentry} style={{ transform: `translateY(${scrollHeight}px)` }} ></div>
       {
         visibleList.map((item, idx) => 
-          <WrappedItem idx={firstItem + idx} sizeChange={sizeChange} key={idx} style={{transform: `translateY(${itemScrollYs[idx + firstItem]}px)`}} >
+          <WrappedItem index={item.index!} sizeChange={sizeChange} key={idx} style={{transform: `translateY(${itemScrollYs[item.index!]}px)`}} >
             <DynamicItem item={item} />
           </WrappedItem>
         )
