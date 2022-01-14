@@ -1,4 +1,4 @@
-import React, { Component, Fragment, RefObject } from "react";
+import React, { Component, RefObject } from "react";
 import { outerHeight } from "../utils";
 import styles from './index.module.scss'
 
@@ -145,11 +145,13 @@ export default class FixInfinitedScroll<T extends TExtra> extends Component<TPro
         {
           visibleList.map((item, idx) => {
             const renderNode = children(item, this.itemRef);
-            const cloneElement = React.cloneElement(renderNode, {
-              style: { transform: `translateY(${item.scrollY}px)` },
-              key: this.props.keyProp !== undefined ? (item as any)[this.props.keyProp] : idx
-            })
-            return cloneElement;
+            return (
+              <div key={(item as any)[this.props.keyProp!] ?? idx}
+                style={{ transform: `translateY(${item.scrollY}px)`, contain: 'size' }}
+                className={styles.wrapItem} >
+                  { renderNode }
+              </div>
+            )
           })
         }
       </div>

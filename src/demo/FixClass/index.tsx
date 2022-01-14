@@ -16,7 +16,7 @@ const FixClass = React.memo<TProps>(() => {
       <FixInfinitedScroll load={load} list={list} >
         {
           (item, ref) => 
-            <Item ref={ref} item={item} style={{}} />
+            <Item ref={ref} item={item} />
           
         }
       </FixInfinitedScroll>

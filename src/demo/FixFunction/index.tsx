@@ -2,7 +2,7 @@ import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { generateItems } from '../../mock';
 import { outerHeight } from '../../utils';
 import Item from '../Item';
-import './index.css';
+import styles from './index.module.scss';
 
 
 let ELEMENT_HEIGHT = 0;
@@ -83,11 +83,13 @@ function FixFunction() {
     })
   }, [list]);
   return (
-    <div onScroll={scroll} ref={containerRef} className="container">
-      <div className="sentry" style={{ transform: `translateY(${scrollHeight}px)` }} ></div>
+    <div onScroll={scroll} ref={containerRef} className={styles.container}>
+      <div className={styles.sentry} style={{ transform: `translateY(${scrollHeight}px)` }} ></div>
       {
-        visibleList.map((item, idx) => 
-          <Item style={{transform: `translateY(${item.scrollY}px)`}} ref={itemRef} item={item} key={idx} />
+        visibleList.map((item, idx) =>
+          <div key={idx} style={{transform: `translateY(${item.scrollY}px)`}} className={styles.wrapItem} >
+            <Item ref={itemRef} item={item} />
+          </div>
         )
       }
     </div>
