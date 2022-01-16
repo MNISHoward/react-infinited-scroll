@@ -24,6 +24,7 @@ body {
   margin-bottom: 10px;
   background: #fff;
   contain: layout;
+  will-change: transform;
 }
 
 .wrapItem {
@@ -36,6 +37,14 @@ body {
   height: 20px;
   display: flex;
   justify-content: space-between;
+}
+
+.pic {
+  img {
+    &:first-child {
+      height: 100px;
+    }
+  }
 }
 
 .comment {
