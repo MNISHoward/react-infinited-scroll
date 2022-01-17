@@ -18,21 +18,19 @@ const WrappedItem = React.memo<TProps>(forwardRef(({
   index,
   idx
 }, ref: any) => {
-  const resizeObserver = useRef<ResizeObserver>(new ResizeObserver((entries, observer) => {
-    sizeChange();
-  }));
+  const resizeObserver = useRef<ResizeObserver>(
+    new ResizeObserver((entries, observer) => {
+      sizeChange();
+    })
+  );
+  const myRef = useRef<HTMLDivElement>();
   const resizedContainerRef = useCallback((container: HTMLDivElement) => {
-    ref[idx] = container;
-    if (container !== null) {
-      resizeObserver.current.observe(container);
-    }
-    else {
-      if (resizeObserver.current)
-          resizeObserver.current.disconnect();
-    }
-  }, [ref, idx]);
+    ref[idx] = { dom: container, index };
+    myRef.current = container;
+  }, [ref, idx, index]);
   useEffect(() => {
     const ref = resizeObserver.current;
+    resizeObserver.current.observe(myRef.current!);
     return () => {
       if (ref)
         ref.disconnect();
