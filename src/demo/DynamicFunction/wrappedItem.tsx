@@ -1,4 +1,4 @@
-import React, { forwardRef, useCallback, useEffect, useRef } from 'react'
+import React, { forwardRef, useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import styles from './index.module.scss'
 import ResizeObserver from 'resize-observer-polyfill';
 
@@ -8,36 +8,30 @@ type TProps = {
   sizeChange: () => void;
   index: number,
   ref: any,
-  idx: number
+  idx: number,
+  ob: ResizeObserver
 }
 
 const WrappedItem = React.memo<TProps>(forwardRef(({
   children,
   style,
-  sizeChange,
   index,
-  idx
+  idx,
+  ob
 }, ref: any) => {
-  const resizeObserver = useRef<ResizeObserver>(
-    new ResizeObserver((entries, observer) => {
-      sizeChange();
-    })
-  );
-  const myRef = useRef<HTMLDivElement>();
-  const resizedContainerRef = useCallback((container: HTMLDivElement) => {
-    ref[idx] = { dom: container, index };
-    myRef.current = container;
+  const myRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    ref[idx] = { dom: myRef.current, index };
   }, [ref, idx, index]);
-  useEffect(() => {
-    const ref = resizeObserver.current;
-    resizeObserver.current.observe(myRef.current!);
+  useLayoutEffect(() => {
+    ob.observe(myRef.current!);
+    const ref = myRef.current!;
     return () => {
-      if (ref)
-        ref.disconnect();
+      ob.unobserve(ref);
     }
-  }, []);
+  }, [ob]);
 
-  return <div style={style} data-index={index} ref={resizedContainerRef} className={styles.wrapItem} >{children}</div>;
+  return <div style={style} data-index={index} ref={myRef} className={styles.wrapItem} >{children}</div>;
 }));
 
 export default WrappedItem;

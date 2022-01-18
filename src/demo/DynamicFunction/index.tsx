@@ -22,18 +22,24 @@ function DynamicFunction() {
   const [visibleList, setVisibleList] = useState<typeof list>();
   const [scrollHeight, setScrollHeight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<{ dom: HTMLDivElement[], index: number }[]>([]);
+  const itemRefs = useRef<{ dom: HTMLDivElement, index: number }[]>([]);
   const lastScrollTop = useRef(0);
   const anchorItem = useRef({ index: 0, offset: 0 })
+  const resizeObserver = useRef<ResizeObserver>(
+    new ResizeObserver((entries, observer) => {
+      sizeChange();
+    })
+  );
 
   const updateScrollY = useCallback(() => {
-    const items = itemRefs.current.filter(item => item.dom !== null);
+    const items = itemRefs.current;
     const domIndex = Array.from(items).findIndex((item) => item.index === anchorItem.current.index);
     const anchorDom = items[domIndex].dom;
     itemHeights[anchorItem.current.index] = outerHeight(anchorDom);
     itemScrollYs[anchorItem.current.index] = containerRef.current!.scrollTop - anchorItem.current.offset;
     for (let i = domIndex + 1; i < items.length; i++) {
       const item = items[i].dom;
+      if (item === null) return;
       const index = items[i].index;
       itemHeights[index] = outerHeight(item);
       const scrollY = itemScrollYs[index - 1] + itemHeights[index - 1];
@@ -42,13 +48,23 @@ function DynamicFunction() {
 
     for (let i = domIndex - 1; i >= 0; i--) {
       const item = items[i].dom;
+      if (item === null) return;
       const index = items[i].index;
       itemHeights[index] = outerHeight(item);
       const scrollY = itemScrollYs[index + 1] - itemHeights[index];
       itemScrollYs[index] = scrollY;
     }
+    if (itemScrollYs[0] > 0) {
+      const diff = itemScrollYs[0];
+      for (let i = 0; i < items.length; i++) {
+        itemScrollYs[i] -= diff;
+      }
+      const actualScrollTop = anchorItem.current.index - 1 >= 0 ? itemScrollYs[anchorItem.current.index - 1] + anchorItem.current.offset : anchorItem.current.offset;
+      containerRef.current!.scrollTop = actualScrollTop;
+      lastScrollTop.current = actualScrollTop;
+    }
     setItemHeights([...itemHeights]);
-    setItemScrollYs([...itemScrollYs]); 
+    setItemScrollYs([...itemScrollYs]);
   }, [itemHeights, itemScrollYs]);
 
 
@@ -92,8 +108,17 @@ function DynamicFunction() {
           anchorItem.current = { index, offset };
         }
       }
+      if (itemScrollYs[firstItem] < 0) {
+        const actualScrollTop = itemHeights.slice(0, Math.max(0, anchorItem.current.index)).reduce((sum, h) => sum + h, 0);
+        containerRef.current!.scrollTop = actualScrollTop;
+        lastScrollTop.current = actualScrollTop;
+        if (actualScrollTop === 0) {
+          anchorItem.current = { index: 0, offset: 0 };
+        }
+        updateScrollY();
+      }
     },
-    [itemHeights, list],
+    [itemHeights, list, updateScrollY, firstItem, itemScrollYs],
   )
 
   const sizeChange = useCallback(() => {
@@ -118,6 +143,10 @@ function DynamicFunction() {
     const containerHeight = containerRef.current?.clientHeight ?? 0;
     VISIBLE_COUNT = Math.ceil(containerHeight / ELEMENT_HEIGHT);
     setLastItem(VISIBLE_COUNT + BUFFER_SIZE);
+    const ro = resizeObserver.current;
+    return () => {
+      ro.disconnect();
+    }
   }, [])
   useLayoutEffect(() => {
     setVisibleList(list.slice(firstItem, lastItem));
@@ -135,7 +164,7 @@ function DynamicFunction() {
       <div className={styles.sentry} style={{ transform: `translateY(${scrollHeight}px)` }} ></div>
       {
         visibleList?.map((item, idx) => 
-          <WrappedItem ref={itemRefs.current} idx={idx} index={item.index!} sizeChange={sizeChange} key={item.index} style={{transform: `translateY(${itemScrollYs[item.index!]}px)`}} >
+          <WrappedItem ob={resizeObserver.current} ref={itemRefs.current} idx={idx} index={item.index!} sizeChange={sizeChange} key={item.index} style={{transform: `translateY(${itemScrollYs[item.index!]}px)`}} >
             <DynamicItem item={item} />
           </WrappedItem>
         )
