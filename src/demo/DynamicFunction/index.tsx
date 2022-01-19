@@ -9,6 +9,7 @@ import WrappedItem from './wrappedItem';
 let ELEMENT_HEIGHT = 100;
 let VISIBLE_COUNT = 0;
 const BUFFER_SIZE = 3;
+let MAX = 0;
 
 type ITEM_TYPE = ReturnType<typeof generateDynamicItems>[0];
 
@@ -134,7 +135,10 @@ function DynamicFunction() {
       setLastItem(Math.min(list.length, start + VISIBLE_COUNT + BUFFER_SIZE * 2));
       if (container.scrollTop + container.clientHeight >=
         container.scrollHeight - 10) {
-        setData([...data, ...generateDynamicItems()]);
+          if (MAX < 3) {
+            MAX++;
+            setData([...data, ...generateDynamicItems()]);
+          }
       }
     },
     [list, updateAnchorItem, data],
@@ -164,7 +168,7 @@ function DynamicFunction() {
       <div className={styles.sentry} style={{ transform: `translateY(${scrollHeight}px)` }} ></div>
       {
         visibleList?.map((item, idx) => 
-          <WrappedItem ob={resizeObserver.current} ref={itemRefs.current} idx={idx} index={item.index!} sizeChange={sizeChange} key={item.index} style={{transform: `translateY(${itemScrollYs[item.index!]}px)`}} >
+          <WrappedItem ob={resizeObserver.current} ref={itemRefs.current} idx={idx} index={item.index!} key={item.index} style={{transform: `translateY(${itemScrollYs[item.index!]}px)`}} >
             <DynamicItem item={item} />
           </WrappedItem>
         )

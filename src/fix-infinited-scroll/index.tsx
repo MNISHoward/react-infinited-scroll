@@ -93,8 +93,8 @@ export default class FixInfinitedScroll<T extends TExtra> extends Component<TPro
       }
   }
 
-  scrollHandler = (event: React.TouchEvent<HTMLDivElement>) => {
-    const container = event.currentTarget;
+  scrollHandler = () => {
+    const container = this.containerRef.current!;
     const delta = container.scrollTop - this.lastScrollTop;
     this.lastScrollTop = container.scrollTop;
     const isPositive = delta >= 0;

@@ -23,14 +23,14 @@ body {
   flex-direction: column;
   margin-bottom: 10px;
   background: #fff;
-  contain: layout;
-  will-change: transform;
 }
 
 .wrapItem {
   position: absolute;
   left: 0;
   right: 0;
+  contain: layout;
+  will-change: transform;
 }
 
 .info {

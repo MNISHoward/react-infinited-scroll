@@ -1,10 +1,12 @@
-import React, { Component, RefObject } from 'react'
+import React, { Component } from 'react'
 import { outerHeight } from '../utils'
-import styles from '../index.module.scss'
+import styles from './index.module.scss'
+import ResizeObserver from 'resize-observer-polyfill'
+import WrappedItem from './wrappedItem'
 
 type TProps<T> = {
   list: T[];
-  children: (item: T, ref: RefObject<React.ReactElement>) => React.ReactElement;
+  children: (item: T) => React.ReactElement;
   bufferSize: number;
   load?: () => void;
   keyProp?: string;
@@ -19,7 +21,10 @@ type TState<T> = {
   firstItem: number;
   lastItem: number;
   visibleList: T[];
+  _list: (T & TExtra)[];
   scrollHeight: number;
+  itemHeights: number[];
+  itemScrollYs: number[];
 }
 
 export default class DynamicInfinitedScroll<T extends TExtra> extends Component<TProps<T>, TState<T>> {
@@ -27,108 +32,187 @@ export default class DynamicInfinitedScroll<T extends TExtra> extends Component<
     bufferSize: 3
   }
 
-  ELEMENT_HEIGHT = 0;
   VISIBLE_COUNT = 0;
-  itemRef = React.createRef<React.ReactElement>();
   containerRef = React.createRef<HTMLDivElement>();
   anchorItem = { index: 0, offset: 0 }
   lastScrollTop = 0;
+  ro: ResizeObserver = new ResizeObserver(() => {});
+  items: { dom: HTMLDivElement, index: number }[] = [];
 
   constructor(props: TProps<T>) {
     super(props);
-    if (!this.props.list || this.props.list.length < 0) {
-      throw new Error('list can not be empty')
-    }
+    const _list: T[] = [];
+    this.props.list.forEach((item, idx) => {
+      item.index = _list.length;
+      _list.push(item)
+    })
     this.state = {
       firstItem: 0,
       lastItem: 0,
-      visibleList: this.props.list,
+      _list,
+      visibleList: [],
       scrollHeight: 0,
+      itemHeights: [],
+      itemScrollYs: [],
     }
   }
 
   componentDidMount() {
-    this.ELEMENT_HEIGHT = outerHeight(this.itemRef.current);
     const containerHeight = this.containerRef.current?.clientHeight ?? 0;
-    this.VISIBLE_COUNT = Math.ceil(containerHeight / this.ELEMENT_HEIGHT);
+    this.VISIBLE_COUNT = Math.ceil(containerHeight / this.props.elementHeight);
     this.setState({
       ...this.state,
       lastItem: this.VISIBLE_COUNT + this.props.bufferSize,
-      scrollHeight: this.ELEMENT_HEIGHT * this.props.list.length
     });
-    this.props.list.forEach((item, idx) => {
-      item.scrollY = idx * this.ELEMENT_HEIGHT;
+    this.ro = new ResizeObserver(() => {
+      this.sizeChange();
     })
   }
 
   componentDidUpdate(prevProps: TProps<T>, prevState: TState<T>) {
-    const { firstItem: preFirstItem, lastItem: preLastItem } = prevState;
+    const { firstItem: preFirstItem, lastItem: preLastItem, itemHeights: preItemHeights } = prevState;
     const { list: preList } = prevProps;
-    const { firstItem, lastItem } = this.state;
-    const { list } = this.props;
+    const { firstItem, lastItem, itemHeights, _list } = this.state;
+    const { list, elementHeight, bufferSize } = this.props;
     if (list !== preList) {
+      const _list: T[] = [];
+      list.forEach((item, idx) => {
+        item.index = _list.length;
+        _list.push(item);
+      });
+      const last = Math.min(_list.length, firstItem + this.VISIBLE_COUNT + bufferSize * 2);
+      const scrollH = itemHeights.reduce((sum, h) => sum += h, 0);
       this.setState({
         ...this.state,
-        visibleList: list.slice(firstItem, lastItem),
-        scrollHeight: list.length * this.ELEMENT_HEIGHT
-      })
-      list.forEach((item, idx) => {
-        item.scrollY = idx * this.ELEMENT_HEIGHT;
+        _list,
+        visibleList: _list.slice(firstItem, last),
+        scrollHeight: scrollH + (_list.length - itemHeights.length) * elementHeight,
+        lastItem: last
       })
     }
     if (firstItem !== preFirstItem || lastItem !== preLastItem) {
       this.setState({
         ...this.state,
-        visibleList: list.slice(firstItem, lastItem),
+        visibleList: _list.slice(firstItem, lastItem),
+      })
+    }
+    if (itemHeights !== preItemHeights) {
+      const scrollH = itemHeights.reduce((sum, h) => sum += h, 0);
+      this.setState({
+        ...this.state,
+        scrollHeight: scrollH + (_list.length - itemHeights.length) * elementHeight
       })
     }
   }
 
-  updateAnchorItem = (container: HTMLDivElement) => {
-    const index = Math.floor(container.scrollTop / this.ELEMENT_HEIGHT);
-      const offset = container.scrollTop - this.ELEMENT_HEIGHT * index;
-      this.anchorItem = {
-        index,
-        offset
+   updateScrollY = () => {
+    const items = this.items;
+    const { itemHeights, itemScrollYs } = this.state;
+    const domIndex = Array.from(items).findIndex((item) => item.index === this.anchorItem.index);
+    const anchorDom = items[domIndex].dom;
+    itemHeights[this.anchorItem.index] = outerHeight(anchorDom);
+    itemScrollYs[this.anchorItem.index] = this.containerRef.current!.scrollTop - this.anchorItem.offset;
+    for (let i = domIndex + 1; i < items.length; i++) {
+      const item = items[i].dom;
+      if (item === null) return;
+      const index = items[i].index;
+      itemHeights[index] = outerHeight(item);
+      const scrollY = itemScrollYs[index - 1] + itemHeights[index - 1];
+      itemScrollYs[index] = scrollY;
+    }
+
+    for (let i = domIndex - 1; i >= 0; i--) {
+      const item = items[i].dom;
+      if (item === null) return;
+      const index = items[i].index;
+      itemHeights[index] = outerHeight(item);
+      const scrollY = itemScrollYs[index + 1] - itemHeights[index];
+      itemScrollYs[index] = scrollY;
+    }
+    if (itemScrollYs[0] > 0) {
+      const diff = itemScrollYs[0];
+      for (let i = 0; i < items.length; i++) {
+        itemScrollYs[i] -= diff;
       }
+      const actualScrollTop = this.anchorItem.index - 1 >= 0 ? itemScrollYs[this.anchorItem.index - 1] + this.anchorItem.offset : this.anchorItem.offset;
+      this.containerRef.current!.scrollTop = actualScrollTop;
+      this.lastScrollTop = actualScrollTop;
+    }
+    this.setState({
+      ...this.state,
+      itemHeights: [...itemHeights],
+      itemScrollYs: [...itemScrollYs]
+    })
   }
 
-  scrollHandler = (event: React.TouchEvent<HTMLDivElement>) => {
-    const container = event.currentTarget;
+  sizeChange = () => {
+    this.updateScrollY();
+  }
+
+  updateAnchorItem = (container: HTMLDivElement) => {
+    const { _list, itemHeights, itemScrollYs, firstItem } = this.state;
+    const { elementHeight } = this.props
     const delta = container.scrollTop - this.lastScrollTop;
     this.lastScrollTop = container.scrollTop;
     const isPositive = delta >= 0;
     this.anchorItem.offset += delta;
-    let tempFirst = this.state.firstItem;
+    let index = this.anchorItem.index;
+    let offset = this.anchorItem.offset;
     if (isPositive) {
-      if (this.anchorItem.offset >= this.ELEMENT_HEIGHT) {
-        this.updateAnchorItem(container);
+      while (index < _list.length && offset >= itemHeights[index]) {
+        if (!itemHeights[index]) {
+          itemHeights[index] = elementHeight;
+        }
+        offset -= itemHeights[index];
+        index++;
       }
-      if (this.anchorItem.index - this.state.firstItem >= this.props.bufferSize) {
-        tempFirst = Math.min(this.props.list.length - this.VISIBLE_COUNT, this.anchorItem.index - this.props.bufferSize)
-        this.setState({
-          ...this.state,
-          firstItem: tempFirst
-        });
+      if (index >= _list.length) {
+        this.anchorItem = { index: _list.length - 1, offset: 0 };
+      } else {
+        this.anchorItem = { index, offset };
       }
     } else {
-      if (container.scrollTop <= 0) {
-        this.anchorItem = { index:0, offset: 0 };
-      } else if (this.anchorItem.offset < 0) {
-        this.updateAnchorItem(container);
+      while (offset < 0) {
+        if (!itemHeights[index - 1]) {
+          itemHeights[index - 1] = elementHeight;
+        }
+        offset += itemHeights[index - 1];
+        index--;
       }
-      if (this.anchorItem.index - this.state.firstItem < this.props.bufferSize) {
-        tempFirst = Math.max(0, this.anchorItem.index - this.props.bufferSize)
-        this.setState({
-          firstItem: tempFirst
-        });
+      if (index < 0) {
+        this.anchorItem = { index: 0, offset: 0 };
+      } else {
+        this.anchorItem = { index, offset };
       }
     }
+    if (itemScrollYs[firstItem] < 0) {
+      const actualScrollTop = itemHeights.slice(0, Math.max(0, this.anchorItem.index)).reduce((sum, h) => sum + h, 0);
+      this.containerRef.current!.scrollTop = actualScrollTop;
+      this.lastScrollTop = actualScrollTop;
+      if (actualScrollTop === 0) {
+        this.anchorItem = { index: 0, offset: 0 };
+      }
+      this.updateScrollY();
+    }
+  }
+
+  updateVisible = () => {
+    const { bufferSize } = this.props;
+    const { _list } = this.state;
+    const start = Math.max(0, this.anchorItem.index - bufferSize);
     this.setState({
-      lastItem: Math.min(tempFirst + this.VISIBLE_COUNT + this.props.bufferSize * 2, this.props.list.length)
+      ...this.state,
+      firstItem: start,
+      lastItem: Math.min(_list.length, start + this.VISIBLE_COUNT + bufferSize * 2)
     })
+  }
+
+  scrollHandler = () => {
+    const container = this.containerRef.current!;
+    this.updateAnchorItem(container);
+    this.updateVisible();
     if (container.scrollTop + container.clientHeight >=
-      container.scrollHeight - 10) {
+      container.scrollHeight) {
       this.props.load?.()
     }
   }
@@ -140,19 +224,14 @@ export default class DynamicInfinitedScroll<T extends TExtra> extends Component<
     }
     const { visibleList } = this.state;
     return (
-      <div className={styles.container} onScroll={this.scrollHandler} ref={this.containerRef} >
+      <div onScroll={this.scrollHandler} ref={this.containerRef} className={styles.container}>
         <div className={styles.sentry} style={{ transform: `translateY(${this.state.scrollHeight}px)` }} ></div>
         {
-          visibleList.map((item, idx) => {
-            const renderNode = children(item, this.itemRef);
-            return (
-              <div key={(item as any)[this.props.keyProp!] ?? idx}
-                style={{ transform: `translateY(${item.scrollY}px)`, contain: 'size' }}
-                className={styles.wrapItem} >
-                  { renderNode }
-              </div>
-            )
-          })
+          visibleList?.map((item, idx) => 
+            <WrappedItem ob={this.ro} ref={this.items} idx={idx} index={item.index!} key={item.index} style={{transform: `translateY(${this.state.itemScrollYs[item.index!]}px)`}} >
+              {children(item)}
+            </WrappedItem>
+          )
         }
       </div>
     )

@@ -19,6 +19,7 @@ body {
   position: absolute;
   left: 0;
   right: 0;
+  contain: size;
 }
 
 .item {
@@ -29,7 +30,6 @@ body {
   height: 210px;
   margin-bottom: 10px;
   background: #fff;
-  contain: size;
 }
 
 .info {
