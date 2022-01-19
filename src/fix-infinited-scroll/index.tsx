@@ -33,6 +33,7 @@ export default class FixInfinitedScroll<T extends TExtra> extends Component<TPro
   containerRef = React.createRef<HTMLDivElement>();
   anchorItem = { index: 0, offset: 0 }
   lastScrollTop = 0;
+  listUpdate = false;
 
   constructor(props: TProps<T>) {
     super(props);
@@ -65,18 +66,22 @@ export default class FixInfinitedScroll<T extends TExtra> extends Component<TPro
     const { firstItem: preFirstItem, lastItem: preLastItem } = prevState;
     const { list: preList } = prevProps;
     const { firstItem, lastItem } = this.state;
-    const { list } = this.props;
+    const { list, bufferSize } = this.props;
     if (list !== preList) {
+      this.listUpdate = true;
       this.setState({
         ...this.state,
         visibleList: list.slice(firstItem, lastItem),
-        scrollHeight: list.length * this.ELEMENT_HEIGHT
+        scrollHeight: list.length * this.ELEMENT_HEIGHT,
+        lastItem: Math.min(firstItem + this.VISIBLE_COUNT + bufferSize * 2, list.length)
+      }, () => {
+        this.listUpdate = false;
       })
       list.forEach((item, idx) => {
         item.scrollY = idx * this.ELEMENT_HEIGHT;
       })
     }
-    if (firstItem !== preFirstItem || lastItem !== preLastItem) {
+    if (!this.listUpdate && (firstItem !== preFirstItem || lastItem !== preLastItem)) {
       this.setState({
         ...this.state,
         visibleList: list.slice(firstItem, lastItem),
@@ -120,6 +125,7 @@ export default class FixInfinitedScroll<T extends TExtra> extends Component<TPro
       if (this.anchorItem.index - this.state.firstItem < this.props.bufferSize) {
         tempFirst = Math.max(0, this.anchorItem.index - this.props.bufferSize)
         this.setState({
+          ...this.state,
           firstItem: tempFirst
         });
       }
@@ -128,7 +134,7 @@ export default class FixInfinitedScroll<T extends TExtra> extends Component<TPro
       lastItem: Math.min(tempFirst + this.VISIBLE_COUNT + this.props.bufferSize * 2, this.props.list.length)
     })
     if (container.scrollTop + container.clientHeight >=
-      container.scrollHeight - 10) {
+      container.scrollHeight - 20) {
       this.props.load?.()
     }
   }

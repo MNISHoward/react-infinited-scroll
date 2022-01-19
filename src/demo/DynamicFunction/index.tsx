@@ -9,7 +9,6 @@ import WrappedItem from './wrappedItem';
 let ELEMENT_HEIGHT = 100;
 let VISIBLE_COUNT = 0;
 const BUFFER_SIZE = 3;
-let MAX = 0;
 
 type ITEM_TYPE = ReturnType<typeof generateDynamicItems>[0];
 
@@ -135,10 +134,7 @@ function DynamicFunction() {
       setLastItem(Math.min(list.length, start + VISIBLE_COUNT + BUFFER_SIZE * 2));
       if (container.scrollTop + container.clientHeight >=
         container.scrollHeight - 10) {
-          if (MAX < 3) {
-            MAX++;
-            setData([...data, ...generateDynamicItems()]);
-          }
+        setData([...data, ...generateDynamicItems()]);
       }
     },
     [list, updateAnchorItem, data],

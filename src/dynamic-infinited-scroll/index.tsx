@@ -38,6 +38,7 @@ export default class DynamicInfinitedScroll<T extends TExtra> extends Component<
   lastScrollTop = 0;
   ro: ResizeObserver = new ResizeObserver(() => {});
   items: { dom: HTMLDivElement, index: number }[] = [];
+  listUpdate = false;
 
   constructor(props: TProps<T>) {
     super(props);
@@ -72,31 +73,36 @@ export default class DynamicInfinitedScroll<T extends TExtra> extends Component<
   componentDidUpdate(prevProps: TProps<T>, prevState: TState<T>) {
     const { firstItem: preFirstItem, lastItem: preLastItem, itemHeights: preItemHeights } = prevState;
     const { list: preList } = prevProps;
-    const { firstItem, lastItem, itemHeights, _list } = this.state;
+    const { firstItem, lastItem, itemHeights } = this.state;
     const { list, elementHeight, bufferSize } = this.props;
+    let _list = this.state._list;
     if (list !== preList) {
-      const _list: T[] = [];
+      this.listUpdate = true;
+      const l: T[] = [];
       list.forEach((item, idx) => {
-        item.index = _list.length;
-        _list.push(item);
+        item.index = l.length;
+        l.push(item);
       });
-      const last = Math.min(_list.length, firstItem + this.VISIBLE_COUNT + bufferSize * 2);
+      const last = Math.min(l.length, firstItem + this.VISIBLE_COUNT + bufferSize * 2);
       const scrollH = itemHeights.reduce((sum, h) => sum += h, 0);
       this.setState({
         ...this.state,
-        _list,
-        visibleList: _list.slice(firstItem, last),
-        scrollHeight: scrollH + (_list.length - itemHeights.length) * elementHeight,
-        lastItem: last
+        _list: l,
+        visibleList: l.slice(firstItem, last),
+        lastItem: last,
+        scrollHeight: scrollH + (l.length - itemHeights.length) * elementHeight
+      }, () => {
+        this.listUpdate = false;
       })
+      _list = l;
     }
-    if (firstItem !== preFirstItem || lastItem !== preLastItem) {
+    if (!this.listUpdate && (firstItem !== preFirstItem || lastItem !== preLastItem)) {
       this.setState({
         ...this.state,
         visibleList: _list.slice(firstItem, lastItem),
       })
     }
-    if (itemHeights !== preItemHeights) {
+    if (!this.listUpdate && itemHeights !== preItemHeights) {
       const scrollH = itemHeights.reduce((sum, h) => sum += h, 0);
       this.setState({
         ...this.state,
@@ -212,7 +218,7 @@ export default class DynamicInfinitedScroll<T extends TExtra> extends Component<
     this.updateAnchorItem(container);
     this.updateVisible();
     if (container.scrollTop + container.clientHeight >=
-      container.scrollHeight) {
+      container.scrollHeight - 20) {
       this.props.load?.()
     }
   }
