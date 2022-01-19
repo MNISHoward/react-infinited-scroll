@@ -156,7 +156,7 @@ export default class DynamicInfinitedScroll<T extends TExtra> extends Component<
   }
 
   updateAnchorItem = (container: HTMLDivElement) => {
-    const { _list, itemHeights, itemScrollYs, firstItem } = this.state;
+    const { _list, itemHeights, itemScrollYs, firstItem, lastItem, scrollHeight } = this.state;
     const { elementHeight } = this.props
     const delta = container.scrollTop - this.lastScrollTop;
     this.lastScrollTop = container.scrollTop;
@@ -164,7 +164,17 @@ export default class DynamicInfinitedScroll<T extends TExtra> extends Component<
     this.anchorItem.offset += delta;
     let index = this.anchorItem.index;
     let offset = this.anchorItem.offset;
-    if (isPositive) {
+    const actualScrollHeight = itemScrollYs[lastItem - 1] + itemHeights[lastItem - 1];
+    if (lastItem === _list.length && actualScrollHeight < scrollHeight) {
+      // 修复底部留白的问题
+      const diff = scrollHeight - actualScrollHeight;
+      offset -= diff;
+      this.setState({
+        ...this.state,
+        scrollHeight: actualScrollHeight
+      })
+    }
+    if (isPositive && offset > 0) {
       while (index < _list.length && offset >= itemHeights[index]) {
         if (!itemHeights[index]) {
           itemHeights[index] = elementHeight;

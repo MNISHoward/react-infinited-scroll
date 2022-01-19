@@ -54,7 +54,7 @@ function DynamicFunction() {
       const scrollY = itemScrollYs[index + 1] - itemHeights[index];
       itemScrollYs[index] = scrollY;
     }
-    if (itemScrollYs[0] > 0) {
+    if (itemScrollYs[0] !== 0) {
       const diff = itemScrollYs[0];
       for (let i = 0; i < items.length; i++) {
         itemScrollYs[i] -= diff;
@@ -81,7 +81,14 @@ function DynamicFunction() {
       anchorItem.current.offset += delta;
       let index = anchorItem.current.index;
       let offset = anchorItem.current.offset;
-      if (isPositive) {
+      const actualScrollHeight = itemScrollYs[lastItem - 1] + itemHeights[lastItem - 1];
+      if (lastItem === list.length && actualScrollHeight < scrollHeight) {
+        // 修复底部留白的问题
+        const diff = scrollHeight - actualScrollHeight;
+        offset -= diff;
+        setScrollHeight(actualScrollHeight);
+      }
+      if (isPositive && offset > 0) {
         while (index < list.length && offset >= itemHeights[index]) {
           if (!itemHeights[index]) {
             itemHeights[index] = ELEMENT_HEIGHT;
@@ -118,7 +125,7 @@ function DynamicFunction() {
         updateScrollY();
       }
     },
-    [itemHeights, list, updateScrollY, firstItem, itemScrollYs],
+    [itemHeights, list, updateScrollY, firstItem, itemScrollYs, scrollHeight, lastItem],
   )
 
   const sizeChange = useCallback(() => {
