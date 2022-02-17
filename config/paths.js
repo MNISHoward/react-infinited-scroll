@@ -70,6 +70,8 @@ module.exports = {
   appTsBuildInfoFile: resolveApp('node_modules/.cache/tsconfig.tsbuildinfo'),
   swSrc: resolveModule(resolveApp, 'src/service-worker'),
   publicUrlOrPath,
+  libSrc: resolveModule(resolveApp, 'src/lib'),
+  libPublic: resolveApp('public_lib')
 };
 
 

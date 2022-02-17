@@ -21,11 +21,9 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "importHelpers": true,
-    "outDir": "lib",
-    "sourceMap": false
   },
   "include": [
-    "src"
+    "src",
   ],
   "exclude": [
     "node_modules",

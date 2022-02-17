@@ -69,6 +69,9 @@
   "scripts": {
     "start": "node scripts/start.js",
     "build:demo": "node scripts/build.js",
+    "build:lib": "LIB_ENV=true BUILD_PATH=dist node scripts/build.js && copyfiles README.md dist",
+    "build:type": "tsc src/lib.ts src/global.d.ts --declaration --emitDeclarationOnly --jsx react-jsx --outDir dist --esModuleInterop --skipLibCheck",
+    "build": "yarn build:demo && yarn build:lib && yarn build:type",
     "test": "node scripts/test.js"
   },
   "eslintConfig": {
@@ -144,5 +147,10 @@
     "presets": [
       "react-app"
     ]
+  },
+  "devDependencies": {
+    "copyfiles": "^2.4.1",
+    "ts-loader": "^9.2.6",
+    "webpack-cli": "^4.9.2"
   }
 }

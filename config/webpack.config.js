@@ -417,7 +417,6 @@ module.exports = function (webpackEnv) {
                     },
                   ],
                 ],
-
                 plugins: [
                   isEnvDevelopment &&
                   shouldUseReactRefresh &&

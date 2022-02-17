@@ -1,46 +1,95 @@
-# Getting Started with Create React App
+<h1>React Infinited Scroll</h1>
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+<p>Infinited Scroll Container for React Frame.</p>
 
-## Available Scripts
+<h2>Install</h2>
+<br/>
+<pre>
+npm install react-infinited-scroll
+or
+yarn add react-infinited-scroll
+</pre>
 
-In the project directory, you can run:
+<h2>Usage</h2>
+<br/>
 
-### `npm start`
+### **Static Height Element**
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+> **If the ight of element inside of scrolling container is static, Please use FixInfinitedScroll**
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```js
+import React, { useCallback, useState } from 'react';
+import FixInfinitedScroll from '../../fix-infinited-scroll';
+import { generateItems } from '../../mock';
+import Item from '../Item';
+import styles from './index.module.scss';
 
-### `npm test`
+type TProps = {};
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+const FixClass =
+  React.memo <
+  TProps >
+  (() => {
+    const [list, setList] = useState(generateItems());
+    const load = useCallback(() => {
+      setList([...list, ...generateItems()]);
+    }, [list]);
+    return (
+      <div className={styles.container}>
+        <FixInfinitedScroll load={load} list={list}>
+          {(item, ref) => <Item ref={ref} item={item} />}
+        </FixInfinitedScroll>
+      </div>
+    );
+  });
 
-### `npm run build`
+export default FixClass;
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### **Dynamic Height Element**
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+> **If the height of element inside of scrolling container only render by displaying, Please use 'DynamicInfinitedScroll'**
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```js
+import React, { useCallback, useState } from 'react';
+import DynamicInfinitedScroll from '../../dynamic-infinited-scroll';
+import { generateDynamicItems } from '../../mock';
+import DynamicItem from '../DynamicItem';
+import styles from './index.module.scss';
 
-### `npm run eject`
+export default function DynamicClass() {
+  const [list, setList] = useState(generateDynamicItems());
+  const load = useCallback(() => {
+    setList([...list, ...generateDynamicItems()]);
+  }, [list]);
+  return (
+    <div className={styles.container}>
+      <DynamicInfinitedScroll load={load} list={list} elementHeight={100}>
+        {(item) => <DynamicItem item={item} />}
+      </DynamicInfinitedScroll>
+    </div>
+  );
+}
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+<h2>API</h2>
+<br />
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### **load**
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+> When scroll to the bottom of container, it will fire the load callback, should load and change list.  
+> **Callback of type: () => void;**
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+<br />
 
-## Learn More
+### **list**
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+> rendering list.  
+> **List type: any[]**
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+<br />
+
+### **elementHeight**
+
+> neccessary property for estimating height, it must be set to 'DynamicInfinitedScroll'  
+> **element height type: number**
