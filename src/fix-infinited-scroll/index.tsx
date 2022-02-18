@@ -3,7 +3,7 @@ import { outerHeight } from "../utils";
 import styles from './index.module.scss'
 
 type TProps<T> = {
-  list: T[];
+  list: (T & TExtra)[];
   children: (item: T, ref: RefObject<React.ReactElement>) => React.ReactElement;
   bufferSize: number;
   load?: () => void;
@@ -17,11 +17,11 @@ type TExtra = {
 type TState<T> = {
   firstItem: number;
   lastItem: number;
-  visibleList: T[];
+  visibleList: (T & TExtra)[];
   scrollHeight: number;
 }
 
-export default class FixInfinitedScroll<T extends TExtra> extends Component<TProps<T>, TState<T>> {
+export default class FixInfinitedScroll<T> extends Component<TProps<T>, TState<T>> {
 
   static defaultProps = {
     bufferSize: 3
