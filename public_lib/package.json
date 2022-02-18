@@ -4,7 +4,7 @@
   "main": "index.js",
   "types": "lib.d.ts",
   "typings": "lib.d.ts",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "sideEffects": false,
   "dependencies": {},
   "homepage": "https://github.com/MNISHoward/react-infinited-scroll#README.md",

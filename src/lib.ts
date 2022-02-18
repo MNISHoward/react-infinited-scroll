@@ -1,4 +1,2 @@
-import FixInfinitedScroll from './fix-infinited-scroll';
-import DynamicInfinitedScroll from './dynamic-infinited-scroll';
-
-export { FixInfinitedScroll, DynamicInfinitedScroll };
+export { default as FixInfinitedScroll } from './fix-infinited-scroll';
+export { default as DynamicInfinitedScroll } from './dynamic-infinited-scroll';

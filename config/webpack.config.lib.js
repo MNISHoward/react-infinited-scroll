@@ -25,32 +25,12 @@ const config = {
 };
 
 
-const cjsConfig = Object.assign({}, config, {
+module.exports = Object.assign({}, config, {
   output: {
     path: paths.appBuild,
     filename: "index.js",
     publicPath: paths.publicUrlOrPath,
-    library: {
-      type: "umd",
-      export: "default"
-    }
+    library: 'react-infinited-scroll',
+    libraryTarget: 'umd'
   },
 });
-
-const esmConfig = Object.assign({}, config, {
-  output: {
-    path: paths.appBuild,
-    filename: "static/js/esm.js",
-    chunkFilename: 'static/js/[name].[contenthash:8].chunk.js',
-    library: {
-      type: "module"
-    },
-  },
-  experiments: {
-    outputModule: true,
-  },
-  externalsType: "import"
-});
-
-
-module.exports = cjsConfig
